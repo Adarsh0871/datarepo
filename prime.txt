@@ -1,0 +1,7 @@
+    You are currently on the main branch.
+    Your local branch is up to date with the remote branch origin/main, meaning there are no new changes on the remote that you haven't pulled.
+
+Changes to be Committed:
+
+    There is one new file, aa.txt, that has been staged and is ready to be committed.
+    The message suggests using git restore --staged <file> if you want to unstage this file.
