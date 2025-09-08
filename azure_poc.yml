@@ -2,9 +2,8 @@ trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: Default   # your self-hosted agent
 
-# Import variable group you created in Library
 variables:
 - group: New variable group 08-Sep
 
@@ -13,12 +12,10 @@ steps:
   inputs:
     versionSpec: '3.x'
 
-# Install Ansible + AWS Collection + boto3
 - script: |
     pip install ansible boto3 botocore amazon.aws
   displayName: 'Install Ansible and AWS dependencies'
 
-# Run Ansible Playbook for AWS
 - script: |
     ansible-playbook -i localhost, \
       -e aws_access_key=$(AWS_ACCESS_KEY_ID) \
