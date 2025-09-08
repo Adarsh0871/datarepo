@@ -4,7 +4,9 @@
   gather_facts: no
 
   vars:
-    ansible_python_interpreter: /usr/bin/python3
+    # Use Python from virtual environment instead of system Python
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/bin/python3"
+
     region: us-east-1
     key_name: ansiblekey
     vpc_cidr: "10.0.0.0/16"
