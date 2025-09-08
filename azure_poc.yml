@@ -2,18 +2,16 @@ trigger:
 - master
 
 pool:
-  name: Default   # your self-hosted agent
+  name: 'Default'   # Replace with your agent pool name
 
 variables:
 - group: New variable group 08-Sep
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
-
 - script: |
-    pip install ansible boto3 botocore amazon.aws
+    python3 --version
+    pip3 install --upgrade pip
+    pip3 install ansible boto3 botocore amazon.aws
   displayName: 'Install Ansible and AWS dependencies'
 
 - script: |
