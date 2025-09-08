@@ -1,0 +1,37 @@
+---
+- name: Ensure fresh Nginx setup
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Remove existing Nginx (if installed)
+      apt:
+        name: nginx
+        state: absent
+        purge: yes
+        autoremove: yes
+      ignore_errors: yes
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Show Nginx status
+      command: systemctl status nginx
+      register: nginx_status
+      ignore_errors: yes
+
+    - debug:
+        msg: "{{ nginx_status.stdout }}"
