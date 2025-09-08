@@ -1,0 +1,102 @@
+- name: Launch Azure VM
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    resource_group: MyResourceGroup
+    location: eastus
+    vnet_name: MyVnet
+    vnet_cidr: "10.0.0.0/16"
+    subnet_name: MySubnet
+    subnet_cidr: "10.0.1.0/24"
+    security_group_name: MyNSG
+    vm_name: FullStackVM
+    vm_size: Standard_B1s
+    admin_username: azureuser
+    admin_password: "ChangeMe@123!"   # Or use SSH key
+    image_offer: UbuntuServer
+    image_publisher: Canonical
+    image_sku: 20_04-lts
+    image_version: latest
+
+  tasks:
+    - name: Create resource group
+      azure.azcollection.azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create virtual network
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vnet_name }}"
+        address_prefixes: "{{ vnet_cidr }}"
+
+    - name: Create subnet
+      azure.azcollection.azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "{{ subnet_cidr }}"
+        virtual_network: "{{ vnet_name }}"
+
+    - name: Create Network Security Group with SSH and HTTP
+      azure.azcollection.azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ security_group_name }}"
+        rules:
+          - name: AllowSSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+          - name: AllowHTTP
+            protocol: Tcp
+            destination_port_range: 80
+            access: Allow
+            priority: 1002
+            direction: Inbound
+
+    - name: Create public IP
+      azure.azcollection.azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Dynamic
+        name: myPublicIP
+
+    - name: Create network interface
+      azure.azcollection.azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: myNIC
+        virtual_network: "{{ vnet_name }}"
+        subnet: "{{ subnet_name }}"
+        public_ip_name: myPublicIP
+        security_group: "{{ security_group_name }}"
+
+    - name: Create virtual machine
+      azure.azcollection.azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        network_interfaces: myNIC
+        image:
+          offer: "{{ image_offer }}"
+          publisher: "{{ image_publisher }}"
+          sku: "{{ image_sku }}"
+          version: "{{ image_version }}"
+        tags:
+          Name: "{{ vm_name }}"
+          Environment: Development
+          ManagedBy: Ansible
+
+    - name: Get public IP of the VM
+      azure.azcollection.azure_rm_publicipaddress_info:
+        resource_group: "{{ resource_group }}"
+        name: myPublicIP
+      register: output_ip
+
+    - name: Show public IP
+      debug:
+        msg: "Azure VM public IP: {{ output_ip.publicipaddresses[0].ip_address }}"
