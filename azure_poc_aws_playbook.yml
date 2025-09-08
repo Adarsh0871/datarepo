@@ -1,0 +1,108 @@
+
+---
+- name: Launch EC2 Instance
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    region: us-east-1
+    key_name: ansiblekey
+    vpc_cidr: "10.0.0.0/16"
+    subnet_cidr: "10.0.1.0/24"
+    instance_type: t2.micro
+    image_id: ami-020cba7c55df1f615
+    instance_name: FullStackEC2
+    security_group_name: EC2SecurityGroup
+
+  tasks:
+    - name: Create a VPC
+      amazon.aws.ec2_vpc_net:
+        name: MyVPC
+        cidr_block: "{{ vpc_cidr }}"
+        region: "{{ region }}"
+        dns_support: yes
+        dns_hostnames: yes
+        state: present
+      register: vpc
+
+    - name: Create a subnet in the VPC
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "{{ vpc.vpc.id }}"
+        cidr: "{{ subnet_cidr }}"
+        region: "{{ region }}"
+        map_public: yes
+        state: present
+      register: subnet
+
+    - name: Create an internet gateway
+      amazon.aws.ec2_vpc_igw:
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: "{{ region }}"
+        state: present
+      register: igw
+
+    - name: Create route table and associate subnet
+      amazon.aws.ec2_vpc_route_table:
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: "{{ region }}"
+        state: present
+        subnets:
+          - "{{ subnet.subnet.id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw.gateway_id }}"
+      register: route_table
+
+    - name: Create security group allowing SSH and HTTP
+      amazon.aws.ec2_group:
+        name: "{{ security_group_name }}"
+        description: Security group for SSH and HTTP
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+        state: present
+      register: sg
+
+    - name: Launch EC2 instance in subnet
+      amazon.aws.ec2_instance:
+        name: "{{ instance_name }}"
+        key_name: "{{ key_name }}"
+        instance_type: "{{ instance_type }}"
+        image_id: "{{ image_id }}"
+        region: "{{ region }}"
+        wait: yes
+        count: 1
+        network_interfaces:
+          - device_index: 0
+            subnet_id: "{{ subnet.subnet.id }}"
+            assign_public_ip: yes
+            groups:
+              - "{{ sg.group_id }}"
+        volumes:
+          - device_name: /dev/xvda
+            ebs:
+              volume_size: 8
+              delete_on_termination: true
+        tags:
+          Name: "{{ instance_name }}"
+          Environment: Development
+          ManagedBy: Ansible
+        state: running
+      register: ec2
+
+    - name: Output EC2 public IP
+      debug:
+        msg: "EC2 instance public IP: {{ ec2.instances[0].public_ip_address }}"
