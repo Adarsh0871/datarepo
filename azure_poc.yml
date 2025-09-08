@@ -19,5 +19,5 @@ steps:
     ansible-playbook -i localhost, \
       -e aws_access_key="{{ secrets.AWS_ACCESS_KEY_ID }}" \
       -e aws_secret_key="{{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-      azure_poc_playbook.yml
+      azure_poc_aws_playbook.yml
   displayName: 'Run Ansible Playbook for AWS'
