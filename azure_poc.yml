@@ -2,7 +2,7 @@ trigger:
 - master
 
 pool:
-  name: 'Default'   # Replace with your agent pool name
+  name: 'Default'   # Replace with your self-hosted agent pool name
 
 variables:
 - group: New variable group 08-Sep
@@ -10,11 +10,14 @@ variables:
 steps:
 - script: |
     python3 --version
-    pip3 install --upgrade pip
-    pip3 install ansible boto3 botocore amazon.aws
-  displayName: 'Install Ansible and AWS dependencies'
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install ansible boto3 botocore amazon.aws
+  displayName: 'Setup Python & Install Ansible + AWS dependencies'
 
 - script: |
+    source venv/bin/activate
     ansible-playbook -i localhost, \
       -e aws_access_key=$(AWS_ACCESS_KEY_ID) \
       -e aws_secret_key=$(AWS_SECRET_ACCESS_KEY) \
