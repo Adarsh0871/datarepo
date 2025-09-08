@@ -16,6 +16,10 @@
     instance_name: FullStackEC2
     security_group_name: EC2SecurityGroup
 
+    # AWS credentials from pipeline variables
+    aws_access_key: "{{ aws_access_key | default(lookup('env','AWS_ACCESS_KEY_ID')) }}"
+    aws_secret_key: "{{ aws_secret_key | default(lookup('env','AWS_SECRET_ACCESS_KEY')) }}"
+
   tasks:
     - name: Create a VPC
       amazon.aws.ec2_vpc_net:
@@ -25,6 +29,8 @@
         dns_support: yes
         dns_hostnames: yes
         state: present
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: vpc
 
     - name: Create a subnet in the VPC
@@ -34,6 +40,8 @@
         region: "{{ region }}"
         map_public: yes
         state: present
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: subnet
 
     - name: Create an internet gateway
@@ -41,6 +49,8 @@
         vpc_id: "{{ vpc.vpc.id }}"
         region: "{{ region }}"
         state: present
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: igw
 
     - name: Create route table and associate subnet
@@ -53,6 +63,8 @@
         routes:
           - dest: 0.0.0.0/0
             gateway_id: "{{ igw.gateway_id }}"
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: route_table
 
     - name: Create security group allowing SSH and HTTP
@@ -74,6 +86,8 @@
           - proto: all
             cidr_ip: 0.0.0.0/0
         state: present
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: sg
 
     - name: Launch EC2 instance in subnet
@@ -101,6 +115,8 @@
           Environment: Development
           ManagedBy: Ansible
         state: running
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
       register: ec2
 
     - name: Output EC2 public IP
