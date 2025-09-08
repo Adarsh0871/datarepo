@@ -1,0 +1,15 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+
+- script: |
+    pip install ansible[azure]
+    ansible-playbook azure_poc_playbook.yml
+  displayName: 'Run Ansible Playbook'
