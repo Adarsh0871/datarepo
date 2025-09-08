@@ -9,7 +9,15 @@ steps:
   inputs:
     versionSpec: '3.x'
 
+# Install Ansible + AWS Collection + boto3
 - script: |
-    pip install ansible[azure]
-    ansible-playbook azure_poc_playbook.yml
-  displayName: 'Run Ansible Playbook'
+    pip install ansible boto3 botocore amazon.aws
+  displayName: 'Install Ansible and AWS dependencies'
+
+# Run Ansible Playbook for AWS
+- script: |
+    ansible-playbook -i localhost, \
+      -e aws_access_key="{{ secrets.AWS_ACCESS_KEY_ID }}" \
+      -e aws_secret_key="{{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+      azure_poc_playbook.yml
+  displayName: 'Run Ansible Playbook for AWS'
