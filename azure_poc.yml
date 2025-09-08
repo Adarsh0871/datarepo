@@ -13,7 +13,8 @@ steps:
     python3 -m venv venv
     source venv/bin/activate
     pip install --upgrade pip
-    pip install ansible boto3 botocore amazon.aws
+    pip install ansible boto3 botocore
+    ansible-galaxy collection install amazon.aws
   displayName: 'Setup Python & Install Ansible + AWS dependencies'
 
 - script: |
