@@ -1,0 +1,23 @@
+trigger:
+- master
+
+pool:
+  name: Default   # Self-hosted agent
+
+variables:
+- group: New variable group 08-Sep
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+
+# Install Ansible
+- script: |
+    pip install ansible
+  displayName: 'Install Ansible'
+
+# Run Nginx Setup Playbook
+- script: |
+    ansible-playbook -i localhost, nginx_setup.yml
+  displayName: 'Install/Reset Nginx'
