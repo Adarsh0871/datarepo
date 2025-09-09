@@ -55,7 +55,7 @@ steps:
       -e env=${{ parameters.env }} \
       -e templateName=${{ parameters.templateName }} \
       -e callbackUrl=${{ parameters.callbackUrl }} \
-      azure_vm_playbook.yml
+      azure_poc_playbook.yml
   displayName: 'Run Ansible Playbook for Azure'
 
 # ---- Step 3: Send status back to ServiceNow ----
