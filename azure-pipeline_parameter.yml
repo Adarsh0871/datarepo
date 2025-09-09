@@ -40,7 +40,11 @@ steps:
     python3 -m venv venv
     source venv/bin/activate
     pip install --upgrade pip
-    pip install ansible requests msrestazure azure-cli
+
+    # Install Ansible with full Azure support
+    pip install "ansible[azure]" requests msrest msrestazure azure-cli
+
+    # Install Azure collection for Ansible
     ansible-galaxy collection install azure.azcollection
   displayName: 'Setup Python & Install Ansible + Azure dependencies'
 
@@ -62,19 +66,31 @@ steps:
 - script: |
     source venv/bin/activate
 
-    echo "import requests, json" > callback.py
-    echo "callback_url = '${{ parameters.callbackUrl }}'" >> callback.py
-    echo "status = 'success'" >> callback.py
-    echo "payload = {'request_id': '${{ parameters.requestId }}', 'status': status}" >> callback.py
-    echo "if callback_url:" >> callback.py
-    echo "    print('Posting to:', callback_url)" >> callback.py
-    echo "    try:" >> callback.py
-    echo "        resp = requests.post(callback_url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload), auth=('Admin','U%B7QwtuQz1-'))" >> callback.py
-    echo "        print('Response:', resp.status_code, resp.text)" >> callback.py
-    echo "    except Exception as e:" >> callback.py
-    echo "        print('Callback failed:', str(e))" >> callback.py
-    echo "else:" >> callback.py
-    echo "    print('No callback URL provided.')" >> callback.py
+    cat << 'EOF' > callback.py
+import requests, json
+
+callback_url = "${{ parameters.callbackUrl }}"
+status = "success"
+payload = {
+    "request_id": "${{ parameters.requestId }}",
+    "status": status
+}
+
+if callback_url:
+    print("Posting to:", callback_url)
+    try:
+        resp = requests.post(
+            callback_url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            auth=("Admin","U%B7QwtuQz1-")
+        )
+        print("Response:", resp.status_code, resp.text)
+    except Exception as e:
+        print("Callback failed:", str(e))
+else:
+    print("No callback URL provided.")
+EOF
 
     python3 callback.py
   displayName: 'Send Status Callback to ServiceNow'
