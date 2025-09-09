@@ -1,0 +1,59 @@
+trigger:
+- master
+
+pool:
+  name: 'Default'   # Replace with your self-hosted agent pool name
+
+variables:
+- group: New variable group 08-Sep
+
+parameters:
+- name: requestId
+  displayName: "Unique Request ID"
+  type: string
+  default: "REQ0012345"
+
+- name: env
+  displayName: "Target Environment"
+  type: string
+  default: "prod"
+
+- name: templateName
+  displayName: "Ansible Template Name"
+  type: string
+  default: "launch_ec2"
+
+- name: callbackUrl
+  displayName: "Callback URL (required)"
+  type: string
+  default: ""
+
+steps:
+- script: |
+    echo "Setting locale to UTF-8"
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    locale
+
+    python3 --version
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install ansible boto3 botocore
+    ansible-galaxy collection install amazon.aws
+  displayName: 'Setup Python & Install Ansible + AWS dependencies'
+
+- script: |
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    source venv/bin/activate
+    
+    ansible-playbook -i localhost, \
+      -e aws_access_key=$(AWS_ACCESS_KEY_ID) \
+      -e aws_secret_key=$(AWS_SECRET_ACCESS_KEY) \
+      -e requestId=${{ parameters.requestId }} \
+      -e env=${{ parameters.env }} \
+      -e templateName=${{ parameters.templateName }} \
+      -e callbackUrl=${{ parameters.callbackUrl }} \
+      azure_poc_aws_playbook.yml
+  displayName: 'Run Ansible Playbook for AWS'
