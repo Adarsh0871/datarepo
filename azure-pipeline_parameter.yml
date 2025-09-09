@@ -62,30 +62,28 @@ steps:
 - script: |
     source venv/bin/activate
 
-    python3 - <<PYCODE
+    python3 -c "
 import requests, json
-
-callback_url = "${{ parameters.callbackUrl }}"
-status = "success"
+callback_url = '${{ parameters.callbackUrl }}'
+status = 'success'
 payload = {
-    "request_id": "${{ parameters.requestId }}",
-    "status": status
+    'request_id': '${{ parameters.requestId }}',
+    'status': status
 }
-
 if callback_url:
-    print("Posting to:", callback_url)
-    print("Payload:", payload)
+    print('Posting to:', callback_url)
+    print('Payload:', payload)
     try:
         resp = requests.post(
             callback_url,
-            headers={"Content-Type": "application/json"},
+            headers={'Content-Type': 'application/json'},
             data=json.dumps(payload),
             auth=('Admin','U%B7QwtuQz1-')
         )
-        print("Response:", resp.status_code, resp.text)
+        print('Response:', resp.status_code, resp.text)
     except Exception as e:
-        print("Callback failed:", str(e))
+        print('Callback failed:', str(e))
 else:
-    print("No callback URL provided.")
-PYCODE
+    print('No callback URL provided.')
+"
   displayName: 'Send Status Callback to ServiceNow'
