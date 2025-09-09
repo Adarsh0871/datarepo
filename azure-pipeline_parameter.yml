@@ -2,7 +2,7 @@ trigger:
 - master
 
 pool:
-  name: 'Default'
+  name: 'Default'   # Replace with your agent pool name
 
 variables:
 - group: New variable group 08-Sep
@@ -29,6 +29,7 @@ parameters:
   default: ""
 
 steps:
+
 # ---- Step 1: Setup Python + Ansible dependencies ----
 - script: |
     echo "Setting locale to UTF-8"
@@ -41,14 +42,12 @@ steps:
     source venv/bin/activate
     pip install --upgrade pip
 
-    # Install Ansible with full Azure support
-    pip install "ansible[azure]" requests msrest msrestazure azure-cli
-
-    # Install Azure collection for Ansible
+    # Install Ansible and Azure dependencies
+    pip install ansible requests msrestazure azure-cli
     ansible-galaxy collection install azure.azcollection
   displayName: 'Setup Python & Install Ansible + Azure dependencies'
 
-# ---- Step 2: Run Ansible playbook ----
+# ---- Step 2: Run Ansible Playbook ----
 - script: |
     export LANG=C.UTF-8
     export LC_ALL=C.UTF-8
@@ -62,11 +61,11 @@ steps:
       azure_poc_playbook.yml
   displayName: 'Run Ansible Playbook for Azure'
 
-# ---- Step 3: Send status back to ServiceNow ----
+# ---- Step 3: Send Status Callback to ServiceNow ----
 - script: |
     source venv/bin/activate
 
-    cat << 'EOF' > callback.py
+    python3 << 'EOF'
 import requests, json
 
 callback_url = "${{ parameters.callbackUrl }}"
@@ -83,7 +82,7 @@ if callback_url:
             callback_url,
             headers={"Content-Type": "application/json"},
             data=json.dumps(payload),
-            auth=("Admin","U%B7QwtuQz1-")
+            auth=("Admin","U%B7QwtuQz1-")   # ServiceNow user/pass
         )
         print("Response:", resp.status_code, resp.text)
     except Exception as e:
@@ -91,6 +90,4 @@ if callback_url:
 else:
     print("No callback URL provided.")
 EOF
-
-    python3 callback.py
   displayName: 'Send Status Callback to ServiceNow'
