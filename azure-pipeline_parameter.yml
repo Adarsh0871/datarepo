@@ -1,0 +1,99 @@
+trigger:
+- master
+
+pool:
+  name: 'Default'   # Replace with your self-hosted agent pool name
+
+variables:
+- group: New variable group 08-Sep
+
+parameters:
+- name: requestId
+  displayName: "Unique Request ID"
+  type: string
+  default: "REQ0012345"
+
+- name: env
+  displayName: "Target Environment"
+  type: string
+  default: "prod"
+
+- name: templateName
+  displayName: "Ansible Template Name"
+  type: string
+  default: "launch_vm"
+
+- name: callbackUrl
+  displayName: "Callback URL (ServiceNow)"
+  type: string
+  default: ""
+
+steps:
+# ---- Step 1: Setup Python + Ansible dependencies ----
+- script: |
+    echo "Setting locale to UTF-8"
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    locale
+
+    python3 --version
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install ansible requests \
+                msrestazure \
+                azure-cli \
+                azure-identity \
+                azure-mgmt-compute \
+                azure-mgmt-resource \
+                azure-mgmt-network
+    ansible-galaxy collection install azure.azcollection
+  displayName: 'Setup Python & Install Ansible + Azure dependencies'
+
+# ---- Step 2: Run your Azure playbook ----
+- script: |
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    source venv/bin/activate
+
+    ansible-playbook -i localhost, \
+      -e requestId=${{ parameters.requestId }} \
+      -e env=${{ parameters.env }} \
+      -e templateName=${{ parameters.templateName }} \
+      -e callbackUrl=${{ parameters.callbackUrl }} \
+      azure_poc_playbook.yml
+  displayName: 'Run Ansible Playbook for Azure'
+
+# ---- Step 3: Report status back to ServiceNow ----
+- script: |
+    source venv/bin/activate
+
+    STATUS="success"   # Will enhance to detect failures
+
+    echo "Sending callback to ServiceNow..."
+    python3 - <<EOF
+import requests, json, os
+
+callback_url = "${{ parameters.callbackUrl }}"
+if callback_url:
+    data = {
+        "request_id": "${{ parameters.requestId }}",
+        "status": "${STATUS}"
+    }
+    print("Posting to:", callback_url)
+    print("Payload:", data)
+
+    try:
+        resp = requests.post(
+            callback_url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(data),
+            auth=('Admin','U%B7QwtuQz1-')
+        )
+        print("Response:", resp.status_code, resp.text)
+    except Exception as e:
+        print("Callback failed:", str(e))
+else:
+    print("No callback URL provided.")
+EOF
+  displayName: 'Send Status Callback to ServiceNow'
